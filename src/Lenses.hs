@@ -129,3 +129,31 @@ someUser = User "John" "Cena" "invisible@example.com"
 
 getFullName = view fullName someUser
 setFullName = set fullName "Doctor of Thuganomics" someUser
+
+-- validation lenses --
+data ProducePrices = ProducePrices
+  { _limePrice :: Float
+  , _lemonPrice :: Float
+  } deriving Show
+
+-- lenses_3_7_1 (same for lemonPrice)
+limePrice :: Lens' ProducePrices Float
+limePrice = lens getter setter
+ where
+  getter = _limePrice
+  setter p x = p { _limePrice = max 0 x }
+
+-- lenses_3_7_2
+limePrice' :: Lens' ProducePrices Float
+limePrice' = lens getter setter
+ where
+  getter p = _limePrice p
+  setter p x =
+    let p'  = set limePrice x p
+        lim = view limePrice p'
+        lem = _lemonPrice p'
+        dif = abs (lim - lem)
+        f   = 0.5
+    in  if dif <= f
+          then p'
+          else p' { _lemonPrice = if lim < lem then lim + f else lim - f }

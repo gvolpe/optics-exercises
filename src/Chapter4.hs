@@ -36,3 +36,23 @@ poly_4_2_5 = lens getter setter
  where
   getter (Predicate f) = f
   setter _ g = Predicate g
+
+-- lens composition --
+composition_4_3_1 =
+  view (_2 . _1 . _2) ("Ginerva", (("Galileo", "Waldo"), "Malfoy"))
+
+misteryDomino_4_3_2 = "Lens' Eight Two"
+
+type Armadillo = String
+type Hedgehog = String
+type Platypus = String
+type BabySloth = String
+
+composition_4_3_3
+  :: Functor f => (Armadillo -> f Hedgehog) -> (Platypus -> f BabySloth)
+composition_4_3_3 = undefined
+
+solution_4_3_3 :: Lens Armadillo Hedgehog Platypus BabySloth
+solution_4_3_3 = composition_4_3_3
+
+-- skipping 4_3_4, too much boilerplate :D

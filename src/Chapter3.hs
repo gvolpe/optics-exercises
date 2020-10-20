@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes, TemplateHaskell #-}
 
-module Lenses where
+-- Lenses
+module Chapter3 where
 
 import           Control.Lens
 import           Control.Lens.Unsound           ( lensProduct )

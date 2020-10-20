@@ -1,4 +1,5 @@
-module Poly where
+-- Polymorphic Optics
+module Chapter4 where
 
 import           Control.Lens
 

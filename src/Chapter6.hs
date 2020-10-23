@@ -28,6 +28,7 @@ folds_6_1_5 :: [Int]
 folds_6_1_5 = toListOf (folded . folded) [[1, 2, 3], [4, 5, 6]]
 
 -- if the data is written in-line, it does not compile due to OverloadedStrings (needed for `quotes`, not mentioned in the book)
+-- error: ambiguous type variables given on the use of `folded`.
 data_6_1_6 :: M.Map String String
 data_6_1_6 = M.fromList [("Jack", "Captain"), ("Will", "First Mate")]
 
@@ -57,4 +58,22 @@ folds_6_2_1 = h (f . g) [(1, 'a'), (2, 'b'), (3, 'c')]
   g :: Fold (Int, Char) Int
   g = _1
   h :: Fold [(Int, Char)] Int -> [(Int, Char)] -> [Int]
+  h = toListOf
+
+folds_6_2_2 = h (f . g) (False, S.fromList ["one", "two", "three"])
+ where
+  f :: Fold (Bool, S.Set String) (S.Set String)
+  f = _2
+  g :: Fold (S.Set String) String
+  g = folded
+  h :: Fold (Bool, S.Set String) String -> (Bool, S.Set String) -> [String]
+  h = toListOf
+
+folds_6_2_3 = h (f . g) (M.fromList [("Jack", "Captain"), ("Will", "First Mate")])
+ where
+  f :: Fold (M.Map String String) String
+  f = folded
+  g :: Fold String Char
+  g = folded
+  h :: Fold (M.Map String String) Char -> M.Map String String -> String
   h = toListOf

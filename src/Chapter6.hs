@@ -77,3 +77,18 @@ folds_6_2_3 = h (f . g) (M.fromList [("Jack", "Captain"), ("Will", "First Mate")
   g = folded
   h :: Fold (M.Map String String) Char -> M.Map String String -> String
   h = toListOf
+
+folds_6_3_1 = [1,2,3] ^.. each -- [1,2,3]
+
+folds_6_3_2 = ("Light", "Dark") ^.. _1 -- ["Light"]
+
+folds_6_3_3 = [("Light", "Dark"), ("Happy", "Sad")] ^.. folded . each -- ["Light", "Dark", "Happy", "Sad"]
+
+folds_6_3_4 = [("Light", "Dark"), ("Happy", "Sad")] ^.. folded . _1 -- ["Light", "Happy"]
+
+folds_6_3_5 = [("Light", "Dark"), ("Happy", "Sad")] ^.. folded . folded . f -- "DarkSad"
+ where
+  f :: Fold String Char
+  f = folded
+
+folds_6_3_6 = ("Bond", "James", "Bond") ^.. each

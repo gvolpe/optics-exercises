@@ -4,6 +4,7 @@
 module Chapter6 where
 
 import           Control.Lens
+import           Data.Function                  ( on )
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import qualified Data.Text                     as T
@@ -141,20 +142,44 @@ folds_6_4_7_1 =
   [(12, 45, 66), (91, 123, 87)] ^.. folded . _2 . to show . folding reverse -- "54321"
 
 folds_6_4_7_2 = [(1, "a"), (2, "b"), (3, "c"), (4, "d")] ^.. folded . folding
-  (\(a, b) -> if even a then [b] else []) -- ["b", "d"]
+  (\(a, b) -> [ b | even a ]) -- ["b", "d"]
 
 ------------------------ 6.3 fold actions --------------------------------------
 
-actions_6_3_1 = has folded [] -- False
+actions_1_1 = has folded [] -- False
 
-actions_6_3_2 = foldOf each ("Yo", "Adrian!") -- "YoAdrian!"
+-- could also be `foldOf both`
+actions_1_2 = foldOf each ("Yo", "Adrian!") -- "YoAdrian!"
 
-actions_6_3_3 = elemOf each "phone" ("E.T.", "phone", "home") -- True
+actions_1_3 = elemOf each "phone" ("E.T.", "phone", "home") -- True
 
-actions_6_3_4 = minimumOf folded [5, 7, 2, 3, 13, 17, 11] -- Just 2
+actions_1_4 = minimumOf folded [5, 7, 2, 3, 13, 17, 11] -- Just 2
 
-actions_6_3_5 = lastOf folded [5, 7, 2, 3, 13, 17, 11] -- Just 11
+actions_1_5 = lastOf folded [5, 7, 2, 3, 13, 17, 11] -- Just 11
 
-actions_6_3_6 = anyOf folded ((> 9) . length) (["Bulbasur", "Charmander", "Squirtle"] :: [String]) -- True
+actions_1_6 = anyOf folded
+                    ((> 9) . length)
+                    (["Bulbasur", "Charmander", "Squirtle"] :: [String]) -- True
 
-actions_6_3_7 = findOf folded even [11, 22, 3, 5, 6] -- Just 22 (first even number)
+actions_1_7 = findOf folded even [11, 22, 3, 5, 6] -- Just 22 (first even number)
+
+actions_2_1 = findOf folded
+                     (\x -> x == reverse x)
+                     ["umbrella", "olives", "racecar", "hammer"] -- Just "racecar" (fist palindrome word)
+
+actions_2_2 = allOf each even (2, 4, 6) -- True
+
+actions_2_3 = maximumOf folded [(2, "I'll"), (3, "Be"), (1, "Back")] -- Just (3, "Be")
+
+actions_2_4 = sumOf each (1, 2) -- 3
+
+actions_3_1 = maximumByOf
+  (folding words)
+  (compare `on` (length . filter (`elem` ("aeiou" :: String))))
+  "Do or do not, there is no try." -- Just "there"
+
+actions_3_2 = reverse $ foldMapOf folded id ["a", "b", "c"] -- "cba"
+actions_3_2' = foldByOf folded (flip (++)) "" ["a", "b", "c"]
+
+actions_3_3 = folds_6_4_7_1 -- already solved in a previous BONUS
+actions_3_4 = folds_6_4_7_2 -- already solved in a previous BONUS

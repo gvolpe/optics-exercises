@@ -4,7 +4,6 @@
 module Chapter6 where
 
 import           Control.Lens
-import           Data.Char
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import qualified Data.Text                     as T
@@ -69,7 +68,8 @@ folds_6_2_2 = h (f . g) (False, S.fromList ["one", "two", "three"])
   h :: Fold (Bool, S.Set String) String -> (Bool, S.Set String) -> [String]
   h = toListOf
 
-folds_6_2_3 = h (f . g) (M.fromList [("Jack", "Captain"), ("Will", "First Mate")])
+folds_6_2_3 = h (f . g)
+                (M.fromList [("Jack", "Captain"), ("Will", "First Mate")])
  where
   f :: Fold (M.Map String String) String
   f = folded
@@ -78,7 +78,7 @@ folds_6_2_3 = h (f . g) (M.fromList [("Jack", "Captain"), ("Will", "First Mate")
   h :: Fold (M.Map String String) Char -> M.Map String String -> String
   h = toListOf
 
-folds_6_3_1 = [1,2,3] ^.. each -- [1,2,3]
+folds_6_3_1 = [1, 2, 3] ^.. each -- [1,2,3]
 
 folds_6_3_2 = ("Light", "Dark") ^.. _1 -- ["Light"]
 
@@ -92,3 +92,51 @@ folds_6_3_5 = [("Light", "Dark"), ("Happy", "Sad")] ^.. folded . folded . f -- "
   f = folded
 
 folds_6_3_6 = ("Bond", "James", "Bond") ^.. each
+
+-- ambiguous error again
+folds_6_4_1 :: String
+folds_6_4_1 = ["Yer", "a", "wizard", "Harry"] ^.. folded . f -- "YerawizardHarry"
+ where
+  f :: Fold String Char
+  f = folded
+
+folds_6_4_2 = [[1, 2, 3], [4, 5, 6]] ^.. folded . folding (take 2) -- [1, 2, 4, 5]
+
+folds_6_4_3 = [[1, 2, 3], [4, 5, 6]] ^.. folded . to (take 2) -- [[1, 2], [4, 5]]
+
+folds_6_4_4 = ["bob", "otto", "hannah"] ^.. folded . to reverse -- ["bob", "otto", "hannah"]
+
+folds_6_4_5 =
+  ("abc", "def") ^.. folding (\(a, b) -> [a, b]) . to reverse . folded -- "cbafed
+
+folds_6_4_6_1 = [1 .. 5] ^.. folded . to (* 100) -- [100, 200, 300, 400, 500]
+
+folds_6_4_6_2 = (1, 2) ^.. each -- [1, 2]
+
+folds_6_4_6_3 = [(1, "one"), (2, "two")] ^.. folded . _2 -- ["one", "two"]
+
+folds_6_4_6_4 = (Just 1, Just 2, Just 3) ^.. each . folded -- [1, 2, 3]
+
+folds_6_4_6_5 = (Left 1, Right 2, Left 3) ^.. each . folded -- [2]
+
+folds_6_4_6_6 = [([1, 2], [3, 4]), ([5, 6], [7, 8])] ^.. folded . each . folded -- [1..8]
+
+folds_6_4_6_7 =
+  [1 .. 4] ^.. folded . to (\x -> if even x then Right x else Left x) -- [Left 1, Right 2, Left 3, Right 4]
+
+folds_6_4_6_8 =
+  [(1, (2, 3)), (4, (5, 6))] ^.. each . folding (\(a, (b, c)) -> [a, b, c]) -- [1..6]
+
+folds_6_4_6_9 = [(Just 1, Left "one"), (Nothing, Right 2)] ^.. folded . folding
+  (\(a, b) -> a ^.. folded <> b ^.. folded) -- [1, 2]
+
+folds_6_4_6_10 =
+  [(1, "one"), (2, "two")] ^.. folded . folding (\(a, b) -> [Left a, Right b]) -- [Left 1, Right "one", Left 2, Right "two"]
+
+folds_6_4_6_11 = S.fromList ["apricots", "apples"] ^.. folded . folding reverse -- "selppastocirpa"
+
+folds_6_4_7_1 =
+  [(12, 45, 66), (91, 123, 87)] ^.. folded . _2 . to show . folding reverse -- "54321"
+
+folds_6_4_7_2 = [(1, "a"), (2, "b"), (3, "c"), (4, "d")] ^.. folded . folding
+  (\(a, b) -> if even a then [b] else []) -- ["b", "d"]

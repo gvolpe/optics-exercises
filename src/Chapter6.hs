@@ -93,6 +93,8 @@ folds_6_3_5 = [("Light", "Dark"), ("Happy", "Sad")] ^.. folded . folded . f -- "
 
 folds_6_3_6 = ("Bond", "James", "Bond") ^.. each
 
+------------------------------- custom folds ------------------------------------------------
+
 -- ambiguous error again
 folds_6_4_1 :: String
 folds_6_4_1 = ["Yer", "a", "wizard", "Harry"] ^.. folded . f -- "YerawizardHarry"
@@ -140,3 +142,19 @@ folds_6_4_7_1 =
 
 folds_6_4_7_2 = [(1, "a"), (2, "b"), (3, "c"), (4, "d")] ^.. folded . folding
   (\(a, b) -> if even a then [b] else []) -- ["b", "d"]
+
+------------------------ 6.3 fold actions --------------------------------------
+
+actions_6_3_1 = has folded [] -- False
+
+actions_6_3_2 = foldOf each ("Yo", "Adrian!") -- "YoAdrian!"
+
+actions_6_3_3 = elemOf each "phone" ("E.T.", "phone", "home") -- True
+
+actions_6_3_4 = minimumOf folded [5, 7, 2, 3, 13, 17, 11] -- Just 2
+
+actions_6_3_5 = lastOf folded [5, 7, 2, 3, 13, 17, 11] -- Just 11
+
+actions_6_3_6 = anyOf folded ((> 9) . length) (["Bulbasur", "Charmander", "Squirtle"] :: [String]) -- True
+
+actions_6_3_7 = findOf folded even [11, 22, 3, 5, 6] -- Just 22 (first even number)

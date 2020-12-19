@@ -4,6 +4,7 @@
 module Chapter6 where
 
 import           Control.Lens
+import           Data.Char                      ( isAlpha )
 import           Data.Function                  ( on )
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
@@ -183,3 +184,31 @@ actions_3_2' = foldByOf folded (flip (++)) "" ["a", "b", "c"]
 
 actions_3_3 = folds_6_4_7_1 -- already solved in a previous BONUS
 actions_3_4 = folds_6_4_7_2 -- already solved in a previous BONUS
+
+------------------------ 6.4 higher-order folds --------------------------------------
+
+ho_1_1 = ("Here's looking at you, kid" :: String) ^.. dropping 7 folded -- "looking at you, kid"
+
+ho_1_2 =
+  let xs = ["My Precious", "Hakuna Matata", "No problemo"] :: [String]
+  in  xs ^.. folded . taking 1 worded -- ["My","Hakuna","No"]
+
+ho_1_3 =
+  let xs = ["My Precious", "Hakuna Matata", "No problemo"] :: [String]
+  in  xs ^.. taking 2 (folded . folded) -- "My" --> (folded . worded) works too
+
+ho_1_4 =
+  let xs = ["My Precious", "Hakuna Matata", "No problemo"] :: [String]
+  in  xs ^.. folded . takingWhile (/= ' ') folded -- "MyHakunaNo" --> could use 'worded' here as well
+
+ho_1_5 = sumOf (taking 2 each) (10, 50, 100) -- 60
+
+ho_1_6 =
+  let xs = ("stressed", "guns", "evil")
+  in  xs ^.. backwards each -- ["evil","guns","stressed"]
+
+ho_1_7 =
+  let xs = ("stressed", "guns", "evil")
+  in  xs ^.. backwards each . to reverse -- ["live","snug","desserts"]
+
+ho_1_8 = ("blink182 k9 blazeit420" :: String) ^.. worded . droppingWhile isAlpha folded -- "1829420"

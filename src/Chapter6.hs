@@ -212,3 +212,31 @@ ho_1_7 =
   in  xs ^.. backwards each . to reverse -- ["live","snug","desserts"]
 
 ho_1_8 = ("blink182 k9 blazeit420" :: String) ^.. worded . droppingWhile isAlpha folded -- "1829420"
+
+sample :: [Int]
+sample = [-10, -5, 4, 3, 8, 6, -2, 3, -5, -7]
+
+-- number of days until temperatur above zero
+ho_2_1 = lengthOf (takingWhile (<= 0) folded) sample -- 2
+
+-- the warmest it got in the first four days
+ho_2_2 = maximumOf (taking 4 folded) sample -- Just 4
+
+-- temperature on the day after ho_2_2
+ho_2_3 = sample ^? dropping 1 (droppingWhile (/= 4) folded) -- Just 3
+
+-- consecutive below-zero days at the end of the sample... (what's the END?, probably after the 4th day)
+ho_2_4 = lengthOf (to reverse . takingWhile (<0) folded) sample -- 2
+ho_2_4' = lengthOf (takingWhile (<0) (backwards folded)) sample -- from the book
+
+-- temperatures from first thaw until the next freeze
+ho_2_5 = sample ^.. takingWhile (>0) (droppingWhile (<0) folded) -- [4,3,8,6]
+
+-- BONUS: temperatures between the FIRST thaw and the FINAL freeze
+ho_2_6 = sample ^.. backwards (droppingWhile (< 0) (backwards (droppingWhile (< 0) folded))) -- [4,3,8,6,-2,3]
+
+-- Generalization of the bonus function
+trimmingWhile :: (a -> Bool) -> Fold s a -> Fold s a
+trimmingWhile p = backwards . droppingWhile p . backwards . droppingWhile p
+
+ho_2_6' = sample ^.. trimmingWhile (<0) folded

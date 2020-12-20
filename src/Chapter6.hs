@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, TemplateHaskell #-}
 
 -- Folds
 module Chapter6 where
@@ -6,6 +6,7 @@ module Chapter6 where
 import           Control.Lens
 import           Data.Char                      ( isAlpha )
 import           Data.Function                  ( on )
+import           Data.List                      ( isPrefixOf )
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import qualified Data.Text                     as T
@@ -240,3 +241,60 @@ trimmingWhile :: (a -> Bool) -> Fold s a -> Fold s a
 trimmingWhile p = backwards . droppingWhile p . backwards . droppingWhile p
 
 ho_2_6' = sample ^.. trimmingWhile (<0) folded
+
+------------------------ 6.4 filtering folds --------------------------------------
+
+data Card =
+    Card { _name    :: String
+         , _aura    :: Aura
+         , _holo    :: Bool -- Is the card holographic
+         , _moves   :: [Move]
+         } deriving (Show, Eq)
+
+data Move =
+    Move { _moveName  :: String
+         , _movePower :: Int
+         } deriving (Show, Eq)
+
+-- Each card has an aura-type
+data Aura
+    = Wet
+    | Hot
+    | Spark
+    | Leafy
+    deriving (Show, Eq)
+
+makeLenses ''Card
+makeLenses ''Move
+
+deck = [ Card "Skwortul"    Wet False   [Move "Squirt" 20]
+       , Card "Scorchander" Hot False   [Move "Scorch" 20]
+       , Card "Seedasaur"   Leafy False [Move "Allergize" 20]
+       , Card "Kapichu"     Spark False [Move "Poke" 10 , Move "Zap" 30]
+       , Card "Elecdude"    Spark False [Move "Asplode" 50]
+       , Card "Garydose"    Wet True    [Move "Gary's move" 40]
+       , Card "Moisteon"    Wet False   [Move "Soggy" 3]
+       , Card "Grasseon"    Leafy False [Move "Leaf Cut" 30]
+       , Card "Spicyeon"    Hot False   [Move "Capsaicisize" 40]
+       , Card "Sparkeon"    Spark True  [Move "Shock" 40 , Move "Battery" 50]
+       ]
+
+-- list all the cards whose name starts with 'S'
+ff_1_1 = deck ^.. folded . filtered (isPrefixOf "S" . _name) . name -- ["Skwortul","Scorchander","Seedasaur","Spicyeon","Sparkeon"]
+ff_1_1' = deck ^.. folded . name . filtered ((== 'S') . head) -- the book's solution uses 'head', not good...
+
+-- the lowest attack power of all moves
+ff_1_2 = minimumOf (folded . moves . folded . movePower) deck -- Just 3
+
+-- name of the first card which has more than one move
+ff_1_3 = deck ^? folded . filtered ((> 1) . length . _moves) . name -- Just "Kapichu"
+
+-- are there any Hot cards with a move with more than 30 attack power?
+ff_1_4 = deck ^? folded . filtered ((== Hot) . _aura) . filtered (anyOf (moves . folded . movePower) (>30)) . name -- Just "Spicyeon"
+ff_1_4' = anyOf (folded . filteredBy (aura . only Hot) . moves . folded . movePower) (> 30) deck -- True
+
+-- list the names of all holographic cards with a Wet aura
+ff_1_5 = deck ^.. folded . filtered ((== Wet) . _aura) . filtered _holo . name -- ["Garydose"]
+
+-- sum of all attack power for all moves belonging to non-Leafy cards
+ff_1_6 = sumOf (folded . filtered ((/= Leafy) . _aura) . moves . folded . movePower) deck -- 303

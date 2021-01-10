@@ -180,3 +180,32 @@ lefty f (Left x)  = Left <$> f x
 
 beside' :: Traversal s t a b -> Traversal s' t' a b -> Traversal (s,s') (t,t') a b
 beside' t1 t2 f (s, s') = (,) <$> (s & t1 %%~ f) <*> (s' & t2 %%~ f)
+
+------------------------------- traversal laws -----------------------------------
+
+laws1 :: [(String, String)]
+laws1 = traverseOf both pure ("don't", "touch")
+
+laws1' :: [(String, String)]
+laws1' = pure ("don't", "touch")
+--laws1 == laws1'
+
+laws2 :: (Int, Int)
+laws2 = (0, 0) & both %~ (+10) & both %~ (*10)
+
+laws2' :: (Int, Int)
+laws2' = (0, 0) & both %~ (*10) . (+10)
+--laws2 == laws2'
+
+-- breaks the second law of consistent focuses
+ex1 = "hello" & worded %~ (<> " world") & worded %~ reverse -- "olleh dlrow"
+ex2 = "hello" & worded %~ (reverse. (<> " world")) -- "dlrow olleh"
+
+-- breaks the first law of purity
+evilFst :: Traversal (Int, a) (Int, b) a b
+evilFst f (x, y) = (,) <$> (pure (x + 1)) <*> (f y)
+
+-- the `lined` traversal is unlawful when the update function introduces more newlines
+linedIsUnlawful1 = ("hello \n cruel \n world" :: String) & lined %~ (<> "\n") & lined %~ reverse -- " olleh\n\n leurc \n\ndlrow "
+linedIsUnlawful2 = ("hello \n cruel \n world" :: String) & lined %~ reverse & lined %~ (<> "\n") -- "\n olleh\n\n leurc \n\ndlrow "
+-- linedIsUnlawful1 /= linedIsUnlawful2

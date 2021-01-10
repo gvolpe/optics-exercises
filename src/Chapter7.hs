@@ -11,6 +11,7 @@ import           Control.Monad.State
 import           Data.Char                      ( toLower
                                                 , toUpper
                                                 )
+import qualified Data.Map                      as M
 
 traversals_7_1_1 = "You get a Fold"
 traversals_7_1_2 = "Lenses (and traversals, of course)"
@@ -209,3 +210,29 @@ evilFst f (x, y) = (,) <$> (pure (x + 1)) <*> (f y)
 linedIsUnlawful1 = ("hello \n cruel \n world" :: String) & lined %~ (<> "\n") & lined %~ reverse -- " olleh\n\n leurc \n\ndlrow "
 linedIsUnlawful2 = ("hello \n cruel \n world" :: String) & lined %~ reverse & lined %~ (<> "\n") -- "\n olleh\n\n leurc \n\ndlrow "
 -- linedIsUnlawful1 /= linedIsUnlawful2
+
+------------------------------- traversals: advanced manipulation -----------------------------------
+
+traversals_7_7_1 = [('a', 1), ('b', 2), ('c', 3)] ^. partsOf (traversed . _1) -- "abc"
+traversals_7_7_2 = [('a', 1), ('b', 2), ('c', 3)] ^. partsOf (traversed . _2) -- [1,2,3]
+
+advanced_1 = [1, 2, 3, 4] ^. partsOf (traversed . filtered even) -- [2,4]
+
+advanced_2 = ["Aardvark", "Bandicoot", "Capybara"] ^. traversed . partsOf (taking 3 traversed) -- "AarBanCap"
+
+advanced_3 = ([1, 2], M.fromList [('a', 3), ('b', 4)]) ^. partsOf (beside traversed traversed) -- [1,2,3,4]
+
+advanced_4 = [1, 2, 3, 4] & partsOf (traversed . filtered even) .~ [20, 40] -- [1,20,3,40]
+
+advanced_5 = ["Aardvark", "Bandicoot", "Capybara"] & partsOf (each . each) .~ "Kangaroo" -- ["Kangaroo","Bandicoot","Capybara"]
+
+advanced_6 = ["Aardvark", "Bandicoot", "Capybara"] & partsOf (traversed . traversed) .~ "Ant" -- ["Antdvark","Bandicoot","Capybara"]
+
+advanced_7 = M.fromList [('a', 'a'), ('b', 'b'), ('c', 'c')] & partsOf traversed %~ \(x:xs) -> xs ++ [x] -- M.fromList [('a','b'),('b','c'),('c','a')]
+
+advanced_8 = ('a', 'b', 'c') & partsOf each %~ reverse -- ('c','b','a')
+
+advanced_9 = [1, 2, 3, 4, 5, 6] & partsOf (taking 3 traversed) %~ reverse -- [3,2,1,4,5,6]
+
+-- changing the type, need a polymorphic optic
+advanced_10 = ('a', 'b', 'c') & unsafePartsOf each %~ \xs -> fmap ((,) xs) xs -- (("abc",'a'),("abc",'b'),("abc",'c'))

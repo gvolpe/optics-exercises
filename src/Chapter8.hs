@@ -97,3 +97,24 @@ ex_4 = cimap ^. at "B" -- Just 2
 
 ex_5 = cimap & at "a" ?~ 33 -- CiMap (fromList [("a",33),("b",2)])
 ex_6 = cimap & at "B" ?~ 14 -- CiMap (fromList [("a",1),("b",14)])
+
+-- If we use lenses we can take advantage of the unwrapping and base our instances on the underlying of Map
+newtype CiM a = CiM { _getMap :: M.Map String a } deriving Show
+makeLenses ''CiM
+
+type instance Index (CiM a)   = String
+type instance IxValue (CiM a) = a
+
+instance Ixed (CiM a) where
+  ix :: String -> Traversal' (CiM a) a
+  ix i = getMap . ix (toLower <$> i)
+
+instance At (CiM a) where
+  at :: String -> Lens' (CiM a) (Maybe a)
+  at i = getMap . at (toLower <$> i)
+
+cim = CiM (M.fromList [("a", 1), ("b", 2)])
+
+ex_7 = cim ^? ix "A" -- Just 1
+ex_8 = cim & ix "B" +~ 10 -- CiM {_getMap = fromList [("a",1),("b",12)]}
+ex_9 = cim & at "A" ?~ 0 -- CiM {_getMap = fromList [("a",0),("b",2)]}

@@ -118,3 +118,32 @@ cim = CiM (M.fromList [("a", 1), ("b", 2)])
 ex_7 = cim ^? ix "A" -- Just 1
 ex_8 = cim & ix "B" +~ 10 -- CiM {_getMap = fromList [("a",1),("b",12)]}
 ex_9 = cim & at "A" ?~ 0 -- CiM {_getMap = fromList [("a",0),("b",2)]}
+
+------------------------------- handling missing values -----------------------------------
+
+optic1 = ix "first" `failing` ix "second"
+
+mv_1_1 = M.fromList [("first", False), ("second", False)] & optic1 .~ True -- M.fromList [("first",True),("second",False)]
+mv_1_2 = M.fromList [("second", False)] & optic1 .~ True -- M.fromList [("second",True)]
+
+optic2 = _1 . filtered even `failing` _2
+
+mv_2_1 = (1, 1) & optic2 *~ 10 -- (1,10)
+mv_2_2 = (2, 2) & optic2 *~ 10 -- (20,2)
+
+optic3 = traversed . filtered even `failing` traversed
+
+mv_3_1 = [1, 2, 3, 4] ^.. optic3 -- [2,4]
+mv_3_2 = [1, 3, 5] ^.. optic3    -- [1,3,5]
+
+mv_4_1 = Nothing ^. non "default" -- "default"
+mv_4_2 = Nothing & non 100 +~ 7
+mv_4_3 = M.fromList [("Perogies", True), ("Pizza", True), ("Pilsners", True)] ^. at "Broccoli" . non False
+
+-- M.fromList [ ("Breath of the wild",22000000) , ("Odyssey",9070000) , ("Wario's Woods",999) ]
+mv_4_4 = M.fromList [("Breath of the wild", 22000000), ("Odyssey", 9070000)] & at "Mario's Woods" . non 0 +~ 999
+
+mv_4_5 = ["Math", "Science", "Geography"] ^. pre (ix 10) . non "Unscheduled" -- "Unscheduled"
+
+-- BONUS: use pre and non
+mv_4_6 = [1, 2, 3, 4] ^.. traversed . pre (filtered even) . non (-1) -- [-1, 2, -1, 4]

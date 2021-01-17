@@ -9,7 +9,7 @@ build-type:          Simple
 
 executable optics-exercises
   main-is:             Main.hs
-  build-depends:       base >=4.13 && <4.14
+  build-depends:       base
                      , aeson
                      , containers
                      , lens

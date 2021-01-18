@@ -104,7 +104,7 @@ _Cycles :: Eq a => Int -> Prism' [a] [a]
 _Cycles n = prism' embed match where
   match xs =
     let pattern = take (length xs `div` n) xs
-    in  if embed pattern == xs then Just pattern else Nothing
+    in  pattern <$ guard (embed pattern == xs)
   embed = concat . replicate n
 
 cycles_1 = "dogdogdog" ^? _Cycles 3 -- Just "dog"

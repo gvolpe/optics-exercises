@@ -5,8 +5,10 @@ module Chapter9 where
 
 import           Control.Lens
 import           Control.Monad                 ( guard )
+import           Data.Char                     ( toUpper )
 import           Data.Foldable                 ( traverse_ )
 import           Data.List                     ( stripPrefix )
+import           Data.Maybe                    ( listToMaybe )
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import qualified Data.Text                     as T
@@ -111,3 +113,40 @@ cycles_3 = "aaa" ^? _Cycles 3 -- Just "a"
 cycles_4 = "xyz" ^? _Cycles 3 -- Nothing
 cycles_5 = _Cycles 3 # "dog" -- "dogdogdog"
 cycles_6 = "dogdogdog" & _Cycles 3 .~ "cats" -- "catscatscats"
+
+------------------------------- prisms laws -----------------------------------
+
+_Contains :: forall a. Ord a => a -> Prism' (S.Set a) (S.Set a)
+_Contains x = prism' (S.insert x) match where
+  match xs = S.filter (/= x) xs <$ guard (S.member x xs)
+
+laws_1_1 = S.fromList [1, 2, 3] ^? _Contains 2 -- Just (fromList [1,3])
+
+laws_1_2 = S.fromList [1, 2, 3] ^? _Contains 10 -- Nothing
+
+laws_1_3 = _Contains 10 # S.fromList [1, 2, 3] -- fromList [1,2,3,10]
+
+laws_1_4 = _Contains 2 # S.fromList [1, 2, 3] -- fromList [1,2,3]
+
+-- False: because it filters values out.
+containsLaw1 = preview (_Contains 2) (_Contains 2 # S.fromList [1,2,3]) == Just (S.fromList [1,2,3])
+
+_Singleton :: forall a. Prism' [a] a
+_Singleton = prism' (: []) listToMaybe
+
+singletonLaw1 = preview _Singleton (_Singleton # 3) == Just 3
+
+-- False: because previewing takes only the head of a list (though, the book says it's lawful???)
+-- it seems lawful only when using singleton lists, e.g. [3]
+singletonLaw2 =
+  let s      = [1,2,3]
+      Just a = preview _Singleton s
+      s'     = _Singleton # a
+  in  s == s'
+
+-- any prism that does some formatting easily breaks the first law, let's prove it
+_Format :: Prism' String String
+_Format = prism' (fmap toUpper) Just
+
+-- False: we get Just "FUTURAMA" instead
+formatLaw1 = preview _Format (_Format # "Futurama") == Just "Futurama"

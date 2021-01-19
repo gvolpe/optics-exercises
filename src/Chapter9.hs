@@ -7,7 +7,7 @@ import           Control.Lens
 import           Control.Monad                 ( guard )
 import           Data.Char                     ( toUpper )
 import           Data.Foldable                 ( traverse_ )
-import           Data.List                     ( stripPrefix )
+import           Data.List                     ( intercalate, stripPrefix )
 import           Data.Maybe                    ( listToMaybe )
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
@@ -150,3 +150,49 @@ _Format = prism' (fmap toUpper) Just
 
 -- False: we get Just "FUTURAMA" instead
 formatLaw1 = preview _Format (_Format # "Futurama") == Just "Futurama"
+
+------------------------------- case study: simple server -----------------------------------
+
+type Path = [String]
+type Body = String
+data Request = Post Path Body | Get Path | Delete Path deriving Show
+makePrisms ''Request
+
+path :: Lens' Request Path
+path = lens getter setter where
+  getter (Post p body)   = p
+  getter (Get p)         = p
+  getter (Delete p)      = p
+  setter (Post _ body) p = Post p body
+  setter (Get _) p       = Get p
+  setter (Delete _) p    = Delete p
+
+serveRequest :: Request -> String
+serveRequest _ = "404 Not Found"
+
+-- this is basically a specialized version of `prefixed` from Data.List.Lens
+_PathPrefix :: String -> Prism' Request Request
+_PathPrefix prefix = prism' embed match where
+  -- Add the prefix to the path
+  embed :: Request -> Request
+  embed req = req & path %~ (prefix :)
+  -- Check if the prefix matches the path
+  match :: Request -> Maybe Request
+  match req = (req & path %~ drop 1) <$ guard (has (path . _head . only prefix) req)
+
+safeTail :: [a] -> [a]
+safeTail = tail & outside _Empty .~ const []
+
+userHandler :: Request -> String
+userHandler req = "User handler! Remaining path: " <> intercalate "/" (req ^. path)
+
+postsHandler :: Request -> String
+postsHandler = const "404 Not Found"
+  & outside _Post .~ (\(path', body) -> "Created post with body: " <> body)
+  & outside _Get .~ (\path' -> "Fetching post at path: " <> intercalate "/" path')
+  & outside _Delete .~ (\path' -> "Deleting post at path: " <> intercalate "/" path')
+
+server :: Request -> String
+server = serveRequest
+  & outside (_PathPrefix "users") .~ userHandler
+  & outside (_PathPrefix "posts") .~ postsHandler

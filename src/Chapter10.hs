@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, TypeFamilies #-} -- these are needed for makeWrapped
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 
 -- Isos
 module Chapter10 where
@@ -6,8 +7,10 @@ module Chapter10 where
 import           Control.Lens
 import           Control.Monad                 ( guard )
 import           Data.Char                     ( isUpper, toLower, toUpper )
-import           Data.List                     ( intercalate, transpose )
+import           Data.List                     ( intercalate, sortOn, transpose )
 import           Numeric.Lens
+import qualified Data.List.NonEmpty            as NEL
+import qualified Data.Map                      as M
 import qualified Data.Text                     as T
 
 -- both `packed` and `unpacked` are defined in Data.Text.Lens
@@ -136,3 +139,47 @@ intNot' = enum %~ not
 -- intNot 0 -- 1
 -- intNot 1 -- 0
 -- intNot 2 -- Exception: Prelude.Enum.Bool.toEnum: bad argument
+
+------------------------------- isos and newtypes -----------------------------------
+
+newtype Email = Email String deriving (Show)
+newtype UserID = UserID String deriving (Show)
+
+newts_1 :: Email
+newts_1 = over coerced (reverse :: String -> String) (Email "joe@example.com") -- Email "moc.elpmaxe@eoj"
+
+newts_2 = Email "joe@example.com" & (coerced :: Iso' Email String) . traversed %~ toUpper -- Email "JOE@EXAMPLE.COM"
+
+email :: Iso' Email String
+email = coerced
+
+newts_3 = Email "joe@example.com" & email . traversed %~ toUpper -- Email "JOE@EXAMPLE.COM"
+
+newtype Foo = Foo {_foo :: String} deriving (Show)
+makeLenses ''Foo
+makeWrapped ''Foo
+
+newts_4 = Foo "bar" & foo . traversed %~ toUpper -- Foo {_foo = "BAR"}
+
+newts_5 = Foo "joe@example.com" & _Wrapped' %~ reverse -- Foo {_foo = "moc.elpmaxe@eoj"}
+
+newts_6 = Foo "joe@example.com" & _Wrapping' Foo %~ reverse -- Foo {_foo = "moc.elpmaxe@eoj"}
+
+------------------------------- isos laws ---------------------------------
+
+mapList :: Ord k => Iso' (M.Map k v) [(k, v)]
+mapList = iso M.toList M.fromList
+
+-- fails on duplicate keys
+laws_1_1 = view (from mapList . mapList) [(1, "a"), (1, "b")] -- [(1,"b")]
+
+nonEmptyList :: Iso [a] [b] (Maybe (NEL.NonEmpty a)) (Maybe (NEL.NonEmpty b))
+nonEmptyList = iso NEL.nonEmpty (maybe [] NEL.toList)
+
+sorted :: (Ord a) => Iso' [a] [(Int, a)]
+sorted = iso to' from' where
+  to'   = sortOn snd . zip [0..]
+  from' = (snd <$>) . sortOn fst
+
+laws_2_1 = view (sorted . from sorted) "foo" -- "foo"
+laws_2_2 = [(22, "foo"), (33, "bar")] ^. from sorted . sorted -- [(1,"bar"),(0,"foo")] NOPE

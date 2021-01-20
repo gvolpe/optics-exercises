@@ -6,7 +6,7 @@ module Chapter10 where
 import           Control.Lens
 import           Control.Monad                 ( guard )
 import           Data.Char                     ( isUpper, toLower, toUpper )
-import           Data.List                     ( transpose )
+import           Data.List                     ( intercalate, transpose )
 import           Numeric.Lens
 import qualified Data.Text                     as T
 
@@ -93,3 +93,46 @@ fahrenheit :: Iso' Double Double
 fahrenheit = iso ctf ftc where
   ctf c = (c * (9/5)) + 32
   ftc f = (f - 32) / (9/5)
+
+------------------------------- projecting isos -----------------------------------
+
+toYamlList :: [String] -> String
+toYamlList xs = "- " <> intercalate "\n- " xs
+
+pro_1_1 = putStrLn $ toYamlList ["Milk", "Eggs","Flour"]
+
+shoppingList = ["Milk", "Eggs","Flour"] :: [T.Text]
+
+strShoppingList = shoppingList ^. mapping unpacked :: [String]
+
+pro_1_2 = putStrLn $ toYamlList strShoppingList
+
+pro_1_3 = putStrLn $ shoppingList ^. mapping unpacked . to toYamlList
+
+pro_1_4 = traverseOf_ (mapping unpacked . to toYamlList) putStrLn shoppingList
+
+textToYamlList :: [T.Text] -> T.Text
+textToYamlList = toYamlList ^. dimapping (mapping unpacked) packed
+
+textToYamlList' :: [T.Text] -> T.Text
+textToYamlList' = T.pack . toYamlList . fmap T.unpack
+
+-- exercises
+
+projected_1_1 = ("Beauty", "Age") ^. mapping reversed . swapped :: (String, String) -- ("egA","Beauty")
+
+projected_1_2 = [True, False, True] ^. mapping (involuted not) -- [False,True,False]
+
+projected_1_3 = [True, False, True] & mapping (involuted not) %~ filter id -- [False]
+
+projected_1_4 = (show ^. mapping reversed) 1234 -- "4321"
+
+intNot :: Int -> Int
+intNot = not ^. dimapping enum (from enum)
+
+intNot' :: Int -> Int
+intNot' = enum %~ not
+
+-- intNot 0 -- 1
+-- intNot 1 -- 0
+-- intNot 2 -- Exception: Prelude.Enum.Bool.toEnum: bad argument

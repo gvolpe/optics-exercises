@@ -24,5 +24,6 @@ executable optics-exercises
                      , Chapter8
                      , Chapter9
                      , Chapter10
+                     , Chapter11
   hs-source-dirs:      src
   default-language:    Haskell2010
